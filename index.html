@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Params Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      font-family: Inter, Arial, sans-serif;
+      background: #fffcf9;
+      color: #1e293b;
+      text-align: center;
+    }
+    h1 { color: #4e89bd; margin: 0 0 8px; font-size: 1.8rem; }
+    .step { color: #64748b; margin: 0 0 24px; }
+
+    /* Pretend browser address bar */
+    .bar {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 12px 22px;
+      text-align: left;
+      font-family: Consolas, monospace;
+      font-size: 1.3rem;
+      overflow-wrap: anywhere;
+      min-height: 3.2em;
+    }
+    .bar .base { color: #94a3b8; }
+    .bar .q, .bar .amp { font-weight: bold; padding: 0 2px; }
+    .bar .key { color: #4e89bd; font-weight: bold; }
+    .bar .val { color: #2e7d32; }
+    .bar .eq { color: #64748b; }
+    .bar .pct { border-radius: 4px; }
+    /* Highlights switched on per screen */
+    .hl-q .q,
+    .hl-amp .amp,
+    .hl-pct .pct { background: #fde68a; outline: 2px solid #f59e0b; border-radius: 4px; }
+    .bar .secret { background: #fde68a; outline: 2px solid #f59e0b; border-radius: 4px; }
+
+    /* The mini form */
+    form {
+      max-width: 420px;
+      margin: 28px auto 0;
+      padding: 20px 24px;
+      border: 3px dashed #4e89bd;
+      border-radius: 8px;
+      text-align: left;
+      background: #fff;
+    }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    label:first-child { margin-top: 0; }
+    .tag {
+      font-family: Consolas, monospace;
+      font-weight: normal;
+      font-size: 0.85rem;
+      color: #4e89bd;
+      margin-left: 6px;
+    }
+    input, select {
+      display: block;
+      width: 100%;
+      font: inherit;
+      font-size: 1.1rem;
+      padding: 8px;
+      margin-top: 4px;
+      border: 2px solid #94a3b8;
+      border-radius: 6px;
+    }
+    input:focus, select:focus { outline: 3px solid #61afee; border-color: #4e89bd; }
+    .send {
+      margin-top: 16px;
+      width: 100%;
+    }
+    .hidden { display: none; }
+    .real { display: inline-block; margin-top: 12px; color: #4e89bd; font-weight: bold; }
+
+    .caption {
+      max-width: 680px;
+      margin: 24px auto;
+      font-size: 1.35rem;
+      line-height: 1.5;
+      min-height: 4.5em;
+    }
+    .controls { margin-top: 8px; }
+    button {
+      font: inherit;
+      font-size: 1.1rem;
+      padding: 10px 24px;
+      margin: 0 6px;
+      border-radius: 8px;
+      border: 2px solid #4e89bd;
+      background: #4e89bd;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+    #back { background: #fff; color: #4e89bd; }
+    .key-row { margin-top: 20px; font-size: 0.95rem; color: #64748b; }
+    .key-row b { font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Where did my answers go?</h1>
+  <p class="step" id="step">Screen 1 of 7</p>
+
+  <div class="bar" id="bar"></div>
+
+  <form id="form">
+    <div id="club-fields">
+      <label for="name">Name <span class="tag">name="name"</span></label>
+      <input type="text" id="name" name="name" value="Sam">
+      <label for="email">Email <span class="tag">name="email"</span></label>
+      <input type="text" id="email" name="email" value="sam@example.com">
+      <label for="session">Which meeting? <span class="tag">name="session"</span></label>
+      <select id="session" name="session">
+        <option value="first">First meeting</option>
+        <option value="second">Second meeting</option>
+      </select>
+      <div id="password-field" class="hidden">
+        <label for="password">Password <span class="tag">name="password"</span></label>
+        <input type="text" id="password" name="password" value="pizza123">
+      </div>
+    </div>
+    <div id="google-fields" class="hidden">
+      <label for="q">Search <span class="tag">name="q"</span></label>
+      <input type="text" id="q" name="q" value="pizza">
+      <a class="real" id="real" href="#" target="_blank" rel="noopener">Try it on the real Google →</a>
+    </div>
+    <button type="button" class="send" id="send">Sign me up</button>
+  </form>
+
+  <p class="caption" id="caption"></p>
+
+  <div class="controls">
+    <button id="back">← Back</button>
+    <button id="next">Next →</button>
+  </div>
+  <p class="key-row">Type in the boxes: the address changes live. Arrow keys work too.</p>
+
+  <script>
+    let screens = [
+      {
+        sent: false,
+        caption: "Here's a form like yours. Every input has a name. Look at the blue words: name, email, session. Nothing is in the address yet."
+      },
+      {
+        sent: true,
+        highlight: "hl-q",
+        caption: "I press Sign me up. Our form has nowhere to send the answers, so the browser puts them in the address. After the question mark come the answers."
+      },
+      {
+        sent: true,
+        caption: "Each answer is a pair. The blue part is the input's name, like a spreadsheet column. The green part is what I typed. Watch it change as I type."
+      },
+      {
+        sent: true,
+        highlight: "hl-amp",
+        caption: "The and sign separates the answers. Name, and email, and session."
+      },
+      {
+        sent: true,
+        highlight: "hl-pct",
+        caption: "Some characters aren't allowed in a URL. Percent 40 is how a URL writes the @ sign. A space turns into a plus sign. Try typing Sam Lee."
+      },
+      {
+        sent: true,
+        google: true,
+        caption: "Google's search box is a form too. Its input has name q. Your search goes in the URL after q equals. Change pizza to tacos."
+      },
+      {
+        sent: true,
+        password: true,
+        caption: "Now imagine a password box. URLs are not secrets. They end up in your history, screenshots, shared links and the server's logs. Never put a password in a URL."
+      }
+    ];
+
+    let current = 0;
+    let bar = document.querySelector("#bar");
+    let form = document.querySelector("#form");
+
+    // Wrap one value so %40 and + stand out
+    function markValue(text) {
+      return text.replace(/(%[0-9A-F]{2}|\+)/g, '<span class="pct">$1</span>');
+    }
+
+    function drawBar() {
+      let screen = screens[current];
+      bar.className = "bar " + (screen.highlight || "");
+
+      let base = screen.google ? "google.com/search" : "127.0.0.1:5500/index.html";
+      if (!screen.sent) {
+        bar.innerHTML = '<span class="base">' + base + "</span>";
+        return;
+      }
+
+      let params = new URLSearchParams();
+      if (screen.google) {
+        params.append("q", document.querySelector("#q").value);
+      } else {
+        params.append("name", document.querySelector("#name").value);
+        params.append("email", document.querySelector("#email").value);
+        params.append("session", document.querySelector("#session").value);
+        if (screen.password) {
+          params.append("password", document.querySelector("#password").value);
+        }
+      }
+
+      // params.toString() writes @ as %40 and spaces as +, like a real form
+      let pairs = params.toString().split("&").map(function (pair) {
+        let [key, value] = pair.split("=");
+        let html = '<span class="key">' + key + '</span><span class="eq">=</span><span class="val">' + markValue(value) + "</span>";
+        return key === "password" ? '<span class="secret">' + html + "</span>" : html;
+      });
+      bar.innerHTML = '<span class="base">' + base + '</span><span class="q">?</span>' + pairs.join('<span class="amp">&amp;</span>');
+
+      document.querySelector("#real").href = "https://www.google.com/search?" + params.toString();
+    }
+
+    function show() {
+      let screen = screens[current];
+      document.querySelector("#step").textContent = "Screen " + (current + 1) + " of " + screens.length;
+      document.querySelector("#caption").textContent = screen.caption;
+      document.querySelector("#club-fields").classList.toggle("hidden", !!screen.google);
+      document.querySelector("#google-fields").classList.toggle("hidden", !screen.google);
+      document.querySelector("#password-field").classList.toggle("hidden", !screen.password);
+      document.querySelector("#send").textContent = screen.google ? "Google Search" : "Sign me up";
+      drawBar();
+
+      document.querySelector("#back").disabled = current === 0;
+      document.querySelector("#next").disabled = current === screens.length - 1;
+    }
+
+    function next() {
+      if (current < screens.length - 1) { current = current + 1; show(); }
+    }
+    function back() {
+      if (current > 0) { current = current - 1; show(); }
+    }
+
+    // Pressing the form's button = going to screen 2
+    document.querySelector("#send").addEventListener("click", function () {
+      if (current === 0) { next(); }
+    });
+    form.addEventListener("input", drawBar);
+    form.addEventListener("submit", function (event) { event.preventDefault(); });
+
+    document.querySelector("#next").addEventListener("click", next);
+    document.querySelector("#back").addEventListener("click", back);
+    document.addEventListener("keydown", function (event) {
+      // Don't flip screens while typing in a box
+      if (event.target.matches("input, select")) { return; }
+      if (event.key === "ArrowRight") { next(); }
+      if (event.key === "ArrowLeft") { back(); }
+    });
+
+    // Optional: search-params-demo.html#6 opens on screen 6
+    let start = parseInt(location.hash.slice(1));
+    if (start >= 1 && start <= screens.length) { current = start - 1; }
+
+    show();
+  </script>
+</body>
+</html>
